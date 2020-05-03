@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"log"
@@ -56,12 +57,28 @@ func (b *Bank) Transfer(ctx contractapi.TransactionContextInterface, accountFrom
 	return nil
 }
 
+func (b *Bank) Query(ctx contractapi.TransactionContextInterface, account string) (string, error) {
+	log.Println("Calling Bank Query")
+	accAmountBytes, err := ctx.GetStub().GetState(account)
+	if err != nil {
+		jsonResp := "{\"Error\": \"Failed to get state for account " + account + "}"
+		return "", errors.New(jsonResp)
+	}
+	if accAmountBytes == nil {
+		jsonResp := "{\"Error\": \"Failed to get state for account " + account + "}"
+		return "", errors.New(jsonResp)
+	}
+	jsonResp := "{\"Account\": \"" + account + ",\"Amount\": " + string(accAmountBytes) + "}"
+	log.Println(jsonResp)
+	return string(accAmountBytes), nil
+}
+
 func main() {
 	chainCode, err := contractapi.NewChaincode(new(Bank))
 	if err != nil {
 		panic(err.Error())
 	}
 	if err := chainCode.Start(); err != nil {
-		log.Fatalf("Error starting Banc chaincode: %s", err)
+		log.Fatalf("Error starting Bank chaincode: %s", err)
 	}
 }
